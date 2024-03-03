@@ -91,7 +91,23 @@ cveAnalysis filepath = do
         let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
         let pairs = zip no_verisons trimmed_responses
-        mapM_ (\x -> putStrLn (" -- "++T.unpack (fst x) ++ " -- "++ T.unpack (snd x))) pairs
+
+        mapM_ output_vulnerabilities pairs
+
+
+
+
+output_vulnerabilities :: (T.Text, T.Text) -> IO()
+output_vulnerabilities input = do
+    if T.isInfixOf "No vulnerabilities found" ( (snd input))
+        then
+        setSGR [SetColor Foreground Dull Green] >>  
+        putStrLn (" -- "++T.unpack (fst input) ++ " -- "++ (T.unpack (snd input)))
+        else
+        setSGR [SetColor Foreground Dull Red] >> 
+        putStrLn (" -- "++T.unpack (fst input) ++ " -- "++ (T.unpack (snd input)))
+
+
 
 printLogo :: Int -> IO()
 printLogo x= do
