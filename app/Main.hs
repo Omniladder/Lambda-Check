@@ -49,7 +49,7 @@ getHeads :: [[T.Text]] -> [T.Text]
 getHeads input = map head input
 
 removeVersions :: T.Text -> T.Text
-removeVersions input = head (T.splitOn "^" input)
+removeVersions input = head (T.splitOn "^" (head (T.splitOn "=" (head (T.splitOn ">" (head (T.splitOn "<" input)))))))
 
 cveAnalysis :: FilePath -> IO()
 cveAnalysis filepath = do
