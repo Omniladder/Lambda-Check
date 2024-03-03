@@ -3,6 +3,10 @@
 module Main where
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
+import Network.HTTP.Conduit
+import qualified Data.ByteString.Lazy as L
+
+
 
 removeComments :: [T.Text] -> [T.Text]
 removeComments input = filter (\x -> not (T.isInfixOf "--" x)) input
@@ -27,6 +31,12 @@ dropEmpty input = map (\x -> dropWhile (=="")x) input
 
 getHeads :: [[T.Text]] -> [T.Text]
 getHeads input = map head input 
+
+-- makeRequests :: [T.Text] -> [IO()]
+-- makeRequests  = map (\x-> simpleHttp "http://localhost:8080/search?term=hd/" >>= L.putStr )
+
+-- createOutput :: [T.Text] -> [T.Text] -> [T.Text]
+-- createOutput input1 input2 = map (\x \y -> (x ++ " - "++ y) ) input1 input2
 
 
 main :: IO ()
@@ -55,7 +65,10 @@ main = do
 
     let drop_first = tail head_gotten
 
+    let route = "http://localhost:8080/search?term=" :: String
+
+    let x= map (\x->route ++ T.unpack(x)) drop_first
 
 
-    print drop_first
-    
+
+    print x
