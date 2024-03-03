@@ -44,48 +44,46 @@ dropEmpty input = map (\x -> dropWhile (=="") x) input
 getHeads :: [[T.Text]] -> [T.Text]
 getHeads input = map head input
 
--- createOutput :: [T.Text] -> [T.Text] -> [T.Text]
--- createOutput input1 input2 = map (\x y -> (x ++ y)) input1 input2
+cveAnalysis :: FilePath -> IO()
+cveAnalysis filepath = do
+        fileContent <- TIO.readFile filepath
+        let split_output = splitOnNewLine fileContent
 
+        let no_comments = removeComments split_output
 
-main :: IO ()
-main = do
-    cabalFiles <- listCabalFiles "."
-    fileContent <- TIO.readFile (head cabalFiles)
+        let add_new_lines = addWithNewLines no_comments
 
-    let split_output = splitOnNewLine fileContent
+        let new_string = T.concat add_new_lines
+        
+        let with_commas = replaceWithComma new_string
 
-    let no_comments = removeComments split_output
+        let comma_splits = splitOnComma with_commas
 
-    let add_new_lines = addWithNewLines no_comments
+        let final_newline_split = map splitOnNewLine comma_splits
 
-    let new_string = T.concat add_new_lines
+        let trimmed_empty = trimEmpty final_newline_split
 
-    let with_commas = replaceWithComma new_string
+        let empty_dropped = dropEmpty trimmed_empty
 
-    let comma_splits = splitOnComma with_commas
+        let head_gotten = getHeads empty_dropped
 
-    let final_newline_split = map splitOnNewLine comma_splits
+        let drop_first = nub (tail head_gotten)
 
-    let trimmed_empty = trimEmpty final_newline_split
+        let route = "http://0.0.0.0:8000/search?term=" :: String
 
-    let empty_dropped = dropEmpty trimmed_empty
+        let urls= map (\x->route ++ T.unpack (x)) drop_first
 
-    let head_gotten = getHeads empty_dropped
+        responses <- mapM simpleHttp urls
 
-    let drop_first = nub (tail head_gotten)
+        let converted_resposnes = map (TE.decodeUtf8 . LBS.toStrict) responses
 
-    let route = "http://0.0.0.0:8000/search?term=" :: String
+        let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
-    let urls= map (\x->route ++ T.unpack (x)) drop_first
+        let pairs = zip drop_first trimmed_responses
+        mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
 
-    responses <- mapM simpleHttp urls
-
-    let converted_resposnes = map (TE.decodeUtf8 . LBS.toStrict) responses
-
-    let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
-
-    let pairs = zip drop_first trimmed_responses
+printLogo :: Int -> IO()
+printLogo x= do
     setSGR [SetColor Background Dull Magenta]
     putStrLn " __         ______     __    __     ______     _____     ______                                              "
     putStrLn "/\\ \\       /\\  __ \\   /\\ \ \ \\./  \\   /\\  == \\   /\\  __-.  /\\  __ \\                         "
@@ -98,10 +96,13 @@ main = do
     putStrLn "                     \\ \\ \\____  \\ \\  __ \\  \\ \\  __\\   \\ \\ \\____  \\ \\  _\"-.      "
     putStrLn "                      \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_____\\  \\ \\_____\\  \\ \\_\\ \\_\\ "
     putStrLn "                       \\/_____/   \\/_/\\/_/   \\/_____/   \\/_____/   \\/_/\\/_/             "
-
 -- Ends the Highlighted Section
     putStrLn "\x1b[49m"
     putStrLn ""
 
 
-    mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
+main :: IO ()
+main = do
+    printLogo 1
+    cabalFiles <- listCabalFiles "."
+    mapM_ cveAnalysis cabalFiles
