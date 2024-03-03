@@ -11,11 +11,15 @@ import System.Console.ANSI
 import System.Directory (getDirectoryContents)
 import System.FilePath ( takeExtension)
 
-
 listCabalFiles :: FilePath -> IO [FilePath]
 listCabalFiles dir = do
     contents <- getDirectoryContents dir
     return $ filter (\f -> takeExtension f == ".cabal") contents
+
+listHsFiles :: FilePath -> IO [FilePath]
+listHsFiles dir = do
+    contents <- getDirectoryContents dir
+    return $ filter (\f -> takeExtension f == ".hs") contents
 
 removeQuotesAndSlashes :: T.Text -> T.Text
 removeQuotesAndSlashes = T.replace "\"" "" . T.replace "\\" ""
@@ -47,6 +51,8 @@ getHeads input = map head input
 cveAnalysis :: FilePath -> IO()
 cveAnalysis filepath = do
         fileContent <- TIO.readFile filepath
+        putStrLn ("\n Analyzing " ++ filepath) 
+
         let split_output = splitOnNewLine fileContent
 
         let no_comments = removeComments split_output
@@ -54,7 +60,7 @@ cveAnalysis filepath = do
         let add_new_lines = addWithNewLines no_comments
 
         let new_string = T.concat add_new_lines
-        
+
         let with_commas = replaceWithComma new_string
 
         let comma_splits = splitOnComma with_commas
@@ -80,7 +86,7 @@ cveAnalysis filepath = do
         let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
         let pairs = zip drop_first trimmed_responses
-        mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
+        mapM_ (\x -> putStrLn (" -- "++T.unpack (fst x) ++ " -- "++ T.unpack (snd x))) pairs
 
 printLogo :: Int -> IO()
 printLogo x= do
@@ -100,9 +106,47 @@ printLogo x= do
     putStrLn "\x1b[49m"
     putStrLn ""
 
+weaknessAnalysis :: FilePath -> IO()
+weaknessAnalysis filePath =do
+    fileContent <- TIO.readFile filePath
+    setSGR [SetColor Foreground Dull White] >> putStrLn ("\n Analyzing " ++ filePath) 
+    if T.isInfixOf "import Unsafe.Coerce" fileContent
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn "-- Utilization of unsafeCoerce in type change operations can result in segmenation faults and data corruption"
+        else 
+            setSGR [SetColor Foreground Dull Green] >>
+            putStrLn "-- No risk of unsafeCoerce segmentaion faults!"
+    (if T.isInfixOf "peek" fileContent && T.isInfixOf "import Foreign.Ptr" fileContent 
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn "-- Using peek on a foreign pointer can cause a segmentation fault, if null pointer segmentation fault is garaunteed" 
+        else 
+            setSGR [SetColor Foreground Dull Green] >>            
+            putStrLn "-- No risk of derefrenceing null pointer with peek!")
+    if T.isInfixOf "IORef" fileContent
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn "-- Program is using mutable state via IORef which are vulnerable to buffer overflow"
+        else 
+            setSGR [SetColor Foreground Dull Green] >>
+            putStrLn "-- No risk of buffer overflow from IORef"
+    if T.isInfixOf "foreign import" fileContent
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn "-- Foreign library import detected, non native libraties are more vulnerable to segmentaion faults and buffer overflows"
+        else 
+            setSGR [SetColor Foreground Dull Green] >>
+            putStrLn "-- Foreign imports not found!"
+
+
+
 
 main :: IO ()
 main = do
     printLogo 1
     cabalFiles <- listCabalFiles "."
     mapM_ cveAnalysis cabalFiles
+    hsFiles <- listHsFiles "."
+    mapM_ weaknessAnalysis hsFiles
+
