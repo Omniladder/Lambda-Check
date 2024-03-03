@@ -143,28 +143,48 @@ weaknessOutput input = do
             putStrLn ("-- Utilization of unsafeCoerce in type change operations can result in segmenation faults and data corruption. Error on line " ++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn ("-- No risk of unsafeCoerce segmentaion faults! Line " ++ show (snd input))
+            -- putStrLn ("-- No risk of unsafeCoerce segmentaion faults! Line " ++ show (snd input))
+            putStrLn "-- *"
     if T.isInfixOf "peek" (fst input) && T.isInfixOf "import Foreign.Ptr" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn ("-- Using peek on a foreign pointer can cause a segmentation fault, if null pointer segmentation fault is garaunteed "++ show (snd input)) 
+            putStrLn ("-- Using peek on a foreign pointer can cause a segmentation fault, if null pointer segmentation fault is guaranteed. Error on line "++ show (snd input)) 
         else 
             setSGR [SetColor Foreground Dull Green] >>            
-            putStrLn ("-- No risk of derefrenceing null pointer with peek! Line "++ show (snd input))
+            -- putStrLn ("-- No risk of derefrenceing null pointer with peek! Line "++ show (snd input))
+            putStrLn "-- *"
     if T.isInfixOf "IORef" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn ("-- Program is using mutable state via IORef which are vulnerable to buffer overflow "++ show (snd input))
+            putStrLn ("-- Program is using mutable state via IORef which are vulnerable to buffer overflow. Error on line "++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn ("-- No risk of buffer overflow from IORef! Line "++ show (snd input))
+            -- putStrLn ("-- No risk of buffer overflow from IORef! Line "++ show (snd input))
+            putStrLn "-- *"
     if T.isInfixOf "foreign import" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn( "-- Foreign library import detected, non native libraties are more vulnerable to segmentaion faults and buffer overflows "++ show (snd input))
+            putStrLn( "-- Foreign library import detected, non native libraties are more vulnerable to segmentaion faults and buffer overflows. Error on line "++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn ("-- Foreign imports not found! Line "++ show (snd input))
+            -- putStrLn ("-- Foreign imports not found! Line "++ show (snd input))
+            putStrLn "-- *"
+    if T.isInfixOf "IORef" (fst input) && T.isInfixOf "import Control.Concurent" (fst input) && T.isInfixOf "forkIO" (fst input)
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn ("-- IORef is Unsafe for threads. Does not use up/down blocks to prevent race conditions. Use MVar instead. Error on line "++ show (snd input))
+        else 
+            setSGR [SetColor Foreground Dull Green] >>
+            -- putStrLn ("-- Safe from thread IORef race conditions. Line "++ show (snd input))
+            putStrLn "-- *"
+    if not(T.isInfixOf "import Control.Cuncurent.STM" (fst input)) && not(T.isInfixOf "atomically" (fst input)) && T.isInfixOf "forkIO" (fst input)
+        then 
+            setSGR [SetColor Foreground Dull Red] >>
+            putStrLn ("-- Warning. Using forkIO non atomically can lead to race conditions. Error on line "++ show (snd input))
+        else 
+            setSGR [SetColor Foreground Dull Green] >>
+            -- putStrLn ("-- Safe from non atomic forkIO race conditions "++ show (snd input))
+            putStrLn "-- *"
 
 main :: IO ()
 main = do
