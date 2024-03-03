@@ -131,35 +131,40 @@ weaknessAnalysis :: FilePath -> IO()
 weaknessAnalysis filePath =do
     fileContent <- TIO.readFile filePath
     setSGR [SetColor Foreground Dull White] >> putStrLn ("\n Analyzing " ++ filePath) 
-    if T.isInfixOf "import Unsafe.Coerce" fileContent
+    let lines = T.splitOn "\n" fileContent
+    let tuples = zip lines [1,2..]
+    mapM_ weaknessOutput tuples
+
+weaknessOutput :: (T.Text,Int)-> IO()
+weaknessOutput input = do
+    if T.isInfixOf "import Unsafe.Coerce" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn "-- Utilization of unsafeCoerce in type change operations can result in segmenation faults and data corruption"
+            putStrLn ("-- Utilization of unsafeCoerce in type change operations can result in segmenation faults and data corruption. Error on line " ++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn "-- No risk of unsafeCoerce segmentaion faults!"
-    (if T.isInfixOf "peek" fileContent && T.isInfixOf "import Foreign.Ptr" fileContent 
+            putStrLn ("-- No risk of unsafeCoerce segmentaion faults! Line " ++ show (snd input))
+    if T.isInfixOf "peek" (fst input) && T.isInfixOf "import Foreign.Ptr" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn "-- Using peek on a foreign pointer can cause a segmentation fault, if null pointer segmentation fault is garaunteed" 
+            putStrLn ("-- Using peek on a foreign pointer can cause a segmentation fault, if null pointer segmentation fault is garaunteed "++ show (snd input)) 
         else 
             setSGR [SetColor Foreground Dull Green] >>            
-            putStrLn "-- No risk of derefrenceing null pointer with peek!")
-    if T.isInfixOf "IORef" fileContent
+            putStrLn ("-- No risk of derefrenceing null pointer with peek! Line "++ show (snd input))
+    if T.isInfixOf "IORef" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn "-- Program is using mutable state via IORef which are vulnerable to buffer overflow"
+            putStrLn ("-- Program is using mutable state via IORef which are vulnerable to buffer overflow "++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn "-- No risk of buffer overflow from IORef"
-    if T.isInfixOf "foreign import" fileContent
+            putStrLn ("-- No risk of buffer overflow from IORef! Line "++ show (snd input))
+    if T.isInfixOf "foreign import" (fst input)
         then 
             setSGR [SetColor Foreground Dull Red] >>
-            putStrLn "-- Foreign library import detected, non native libraties are more vulnerable to segmentaion faults and buffer overflows"
+            putStrLn( "-- Foreign library import detected, non native libraties are more vulnerable to segmentaion faults and buffer overflows "++ show (snd input))
         else 
             setSGR [SetColor Foreground Dull Green] >>
-            putStrLn "-- Foreign imports not found!"
-
+            putStrLn ("-- Foreign imports not found! Line "++ show (snd input))
 
 main :: IO ()
 main = do
