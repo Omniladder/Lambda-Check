@@ -6,6 +6,7 @@ import qualified Data.Text as T
 import Network.HTTP.Conduit
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.List
 
 
 
@@ -64,7 +65,7 @@ main = do
 
     let head_gotten = getHeads empty_dropped
 
-    let drop_first = tail head_gotten
+    let drop_first = nub (tail head_gotten)
 
     let route = "http://localhost:8080/search?term=" :: String
 
@@ -77,5 +78,17 @@ main = do
     let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
     let pairs = zip drop_first trimmed_responses
+
+    putStrLn " __         ______     __    __     ______     _____     ______"
+    putStrLn "/\\ \\       /\\  __ \\   /\\ \ \ \\./  \\   /\\  == \\   /\\  __-.  /\\  __ \\"
+    putStrLn "\\ \\ \\____  \\ \\  __ \\  \\ \\ \\-./\\ \\  \\ \\  __<   \\ \\ \\/\\ \\ \\ \\  __ \\"
+    putStrLn " \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_\\ \\ \\_\\  \\ \\_____\\  \\ \\____-  \\ \\_\\ \\_\\"
+    putStrLn "  \\/_____/   \\/_/\\/_/   \\/_/  \\/_/   \\/_____/   \\/____/   \\/_/\\/_/"
+    putStrLn "                                                                    "
+    putStrLn "                      ______     __  __     ______     ______     __  __    "
+    putStrLn "                     /\\  ___\\   /\\ \\_\\ \\   /\\  ___\\   /\\  ___\\   /\\ \\/ /    "
+    putStrLn "                     \\ \\ \\____  \\ \\  __ \\  \\ \\  __\\   \\ \\ \\____  \\ \\  _\"-.  "
+    putStrLn "                      \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_____\\  \\ \\_____\\  \\ \\_\\ \\_\\ "
+    putStrLn "                       \\/_____/   \\/_/\\/_/   \\/_____/   \\/_____/   \\/_/\\/_/ "
 
     mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
