@@ -8,8 +8,14 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.List
 import System.Console.ANSI
+import System.Directory (getDirectoryContents)
+import System.FilePath ( takeExtension)
 
 
+listCabalFiles :: FilePath -> IO [FilePath]
+listCabalFiles dir = do
+    contents <- getDirectoryContents dir
+    return $ filter (\f -> takeExtension f == ".cabal") contents
 
 removeQuotesAndSlashes :: T.Text -> T.Text
 removeQuotesAndSlashes = T.replace "\"" "" . T.replace "\\" ""
@@ -44,7 +50,8 @@ getHeads input = map head input
 
 main :: IO ()
 main = do
-    fileContent <- TIO.readFile "../test.cabal"
+    cabalFiles <- listCabalFiles "."
+    fileContent <- TIO.readFile (head cabalFiles)
 
     let split_output = splitOnNewLine fileContent
 
@@ -68,7 +75,7 @@ main = do
 
     let drop_first = nub (tail head_gotten)
 
-    let route = "http://localhost:8080/search?term=" :: String
+    let route = "http://0.0.0.0:8000/search?term=" :: String
 
     let urls= map (\x->route ++ T.unpack (x)) drop_first
 
@@ -80,17 +87,17 @@ main = do
 
     let pairs = zip drop_first trimmed_responses
     setSGR [SetColor Background Dull Magenta]
-    putStrLn " __         ______     __    __     ______     _____     ______"
-    putStrLn "/\\ \\       /\\  __ \\   /\\ \ \ \\./  \\   /\\  == \\   /\\  __-.  /\\  __ \\"
-    putStrLn "\\ \\ \\____  \\ \\  __ \\  \\ \\ \\-./\\ \\  \\ \\  __<   \\ \\ \\/\\ \\ \\ \\  __ \\"
-    putStrLn " \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_\\ \\ \\_\\  \\ \\_____\\  \\ \\____-  \\ \\_\\ \\_\\"
-    putStrLn "  \\/_____/   \\/_/\\/_/   \\/_/  \\/_/   \\/_____/   \\/____/   \\/_/\\/_/"
-    putStrLn "                                                                    "
-    putStrLn "                      ______     __  __     ______     ______     __  __    "
-    putStrLn "                     /\\  ___\\   /\\ \\_\\ \\   /\\  ___\\   /\\  ___\\   /\\ \\/ /    "
-    putStrLn "                     \\ \\ \\____  \\ \\  __ \\  \\ \\  __\\   \\ \\ \\____  \\ \\  _\"-.  "
+    putStrLn " __         ______     __    __     ______     _____     ______                                              "
+    putStrLn "/\\ \\       /\\  __ \\   /\\ \ \ \\./  \\   /\\  == \\   /\\  __-.  /\\  __ \\                         "
+    putStrLn "\\ \\ \\____  \\ \\  __ \\  \\ \\ \\-./\\ \\  \\ \\  __<   \\ \\ \\/\\ \\ \\ \\  __ \\                       "
+    putStrLn " \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_\\ \\ \\_\\  \\ \\_____\\  \\ \\____-  \\ \\_\\ \\_\\                      "
+    putStrLn "  \\/_____/   \\/_/\\/_/   \\/_/  \\/_/   \\/_____/   \\/____/   \\/_/\\/_/                    "
+    putStrLn "                                                                                               "
+    putStrLn "                      ______     __  __     ______     ______     __  __                       "
+    putStrLn "                     /\\  ___\\   /\\ \\_\\ \\   /\\  ___\\   /\\  ___\\   /\\ \\/ /           "
+    putStrLn "                     \\ \\ \\____  \\ \\  __ \\  \\ \\  __\\   \\ \\ \\____  \\ \\  _\"-.      "
     putStrLn "                      \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_____\\  \\ \\_____\\  \\ \\_\\ \\_\\ "
-    putStrLn "                       \\/_____/   \\/_/\\/_/   \\/_____/   \\/_____/   \\/_/\\/_/ "
+    putStrLn "                       \\/_____/   \\/_/\\/_/   \\/_____/   \\/_____/   \\/_/\\/_/             "
 
 -- Ends the Highlighted Section
     putStrLn "\x1b[49m"
