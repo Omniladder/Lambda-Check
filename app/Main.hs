@@ -7,6 +7,7 @@ import Network.HTTP.Conduit
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.List
+import System.Console.ANSI
 
 
 
@@ -78,7 +79,7 @@ main = do
     let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
     let pairs = zip drop_first trimmed_responses
-
+    setSGR [SetColor Background Dull Magenta]
     putStrLn " __         ______     __    __     ______     _____     ______"
     putStrLn "/\\ \\       /\\  __ \\   /\\ \ \ \\./  \\   /\\  == \\   /\\  __-.  /\\  __ \\"
     putStrLn "\\ \\ \\____  \\ \\  __ \\  \\ \\ \\-./\\ \\  \\ \\  __<   \\ \\ \\/\\ \\ \\ \\  __ \\"
@@ -90,5 +91,10 @@ main = do
     putStrLn "                     \\ \\ \\____  \\ \\  __ \\  \\ \\  __\\   \\ \\ \\____  \\ \\  _\"-.  "
     putStrLn "                      \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_____\\  \\ \\_____\\  \\ \\_\\ \\_\\ "
     putStrLn "                       \\/_____/   \\/_/\\/_/   \\/_____/   \\/_____/   \\/_/\\/_/ "
+
+-- Ends the Highlighted Section
+    putStrLn "\x1b[49m"
+    putStrLn ""
+
 
     mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
