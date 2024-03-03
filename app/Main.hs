@@ -48,6 +48,9 @@ dropEmpty input = map (\x -> dropWhile (=="") x) input
 getHeads :: [[T.Text]] -> [T.Text]
 getHeads input = map head input
 
+removeVersions :: T.Text -> T.Text
+removeVersions input = head (T.splitOn "^" input)
+
 cveAnalysis :: FilePath -> IO()
 cveAnalysis filepath = do
         fileContent <- TIO.readFile filepath
@@ -75,9 +78,11 @@ cveAnalysis filepath = do
 
         let drop_first = nub (tail head_gotten)
 
+        let no_verisons = map removeVersions drop_first
+
         let route = "http://0.0.0.0:8000/search?term=" :: String
 
-        let urls= map (\x->route ++ T.unpack (x)) drop_first
+        let urls= map (\x->route ++ T.unpack (x)) no_verisons
 
         responses <- mapM simpleHttp urls
 
@@ -85,7 +90,7 @@ cveAnalysis filepath = do
 
         let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
 
-        let pairs = zip drop_first trimmed_responses
+        let pairs = zip no_verisons trimmed_responses
         mapM_ (\x -> putStrLn (" -- "++T.unpack (fst x) ++ " -- "++ T.unpack (snd x))) pairs
 
 printLogo :: Int -> IO()
@@ -138,8 +143,6 @@ weaknessAnalysis filePath =do
         else 
             setSGR [SetColor Foreground Dull Green] >>
             putStrLn "-- Foreign imports not found!"
-
-
 
 
 main :: IO ()
