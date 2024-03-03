@@ -4,9 +4,13 @@ module Main where
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import Network.HTTP.Conduit
-import qualified Data.ByteString.Lazy as L
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString.Lazy.Char8 as LBS
 
 
+
+removeQuotesAndSlashes :: T.Text -> T.Text
+removeQuotesAndSlashes = T.replace "\"" "" . T.replace "\\" ""
 
 removeComments :: [T.Text] -> [T.Text]
 removeComments input = filter (\x -> not (T.isInfixOf "--" x)) input
@@ -24,19 +28,16 @@ replaceWithComma :: T.Text -> T.Text
 replaceWithComma input = T.replace "build-depends:" "build-depends:," (T.replace "extra-libraries:" "extra-libraries:," input)
 
 trimEmpty :: [[T.Text]] -> [[T.Text]]
-trimEmpty input = map( \x-> map T.strip x ) input
+trimEmpty input = map ( \x-> map T.strip x ) input
 
 dropEmpty :: [[T.Text]] -> [[T.Text]]
-dropEmpty input = map (\x -> dropWhile (=="")x) input
+dropEmpty input = map (\x -> dropWhile (=="") x) input
 
 getHeads :: [[T.Text]] -> [T.Text]
-getHeads input = map head input 
-
--- makeRequests :: [T.Text] -> [IO()]
--- makeRequests  = map (\x-> simpleHttp "http://localhost:8080/search?term=hd/" >>= L.putStr )
+getHeads input = map head input
 
 -- createOutput :: [T.Text] -> [T.Text] -> [T.Text]
--- createOutput input1 input2 = map (\x \y -> (x ++ " - "++ y) ) input1 input2
+-- createOutput input1 input2 = map (\x y -> (x ++ y)) input1 input2
 
 
 main :: IO ()
@@ -67,8 +68,14 @@ main = do
 
     let route = "http://localhost:8080/search?term=" :: String
 
-    let x= map (\x->route ++ T.unpack(x)) drop_first
+    let urls= map (\x->route ++ T.unpack (x)) drop_first
 
+    responses <- mapM simpleHttp urls
 
+    let converted_resposnes = map (TE.decodeUtf8 . LBS.toStrict) responses
 
-    print x
+    let trimmed_responses =map removeQuotesAndSlashes converted_resposnes
+
+    let pairs = zip drop_first trimmed_responses
+
+    mapM_ (\x -> putStrLn(T.unpack(fst x) ++ " -- "++ T.unpack(snd x))) pairs
